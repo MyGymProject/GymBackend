@@ -162,7 +162,7 @@ def get_specific_member(id:int, db: Session=Depends(get_db),curr_user:str=Depend
     return result
 
 @app.post("/Add_Trainer",response_model=ResponseMemberdata)
-def addtrainer(data: Trainerdata, db: Session=Depends(get_db)):
+def addtrainer(data: Trainerdata, db: Session=Depends(get_db),curr_user:int=Depends(get_curr_user)):
     if len(data.password.encode("utf-8")) > 72: 
         raise HTTPException( status_code=400, detail="Password too long. Must be 72 characters or fewer." )
     hash_pwd=hash_password(data.password)
@@ -247,6 +247,8 @@ def deletemember(email: str, db: Session = Depends(get_db),curr_user:int=Depends
     result = db.query(Member).filter(Member.email == email).first() 
     if not result: 
         raise HTTPException( status_code=status.HTTP_404_NOT_FOUND, detail=f"Member not found with id: {id}" ) 
+    
+    
     db.delete(result) 
     db.commit()  
 
