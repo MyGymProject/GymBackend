@@ -1,0 +1,46 @@
+name: Deploy with Docker Compose
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          # This builds the image and sends it to Docker Hub
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/gym-management:latest
+
+      - name: Deploy to VM via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VM_HOST }}
+          username: ${{ secrets.VM_USER }}
+          key: ${{ secrets.VM_SSH_KEY }}
+          script: |
+            # 1. Navigate to the directory created by your shell script
+            cd ~/my-app 
+            
+            # 2. Pull the fresh image you just pushed to Docker Hub
+            docker compose pull
+            
+            # 3. Re-create containers with the updated image
+            docker compose up -d
+            
+            # 4. Clean up dangling images to save disk space on the VM
+            docker image prune -f

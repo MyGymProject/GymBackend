@@ -173,6 +173,32 @@ def addtrainer(data: Trainerdata, db: Session=Depends(get_db),curr_user:int=Depe
     db.add(user)
     db.commit()
     db.refresh(user)
+
+
+from sqlalchemy import func
+from datetime import date
+
+@app.get("/members/expired")
+def get_expired_members(db: Session = Depends(get_db)):
+    today = date.today()
+
+    # Subquery: get max end_date for each member
+    latest_amounts = (
+        db.query(Amount.user_id, func.max(Amount.end_date).label("latest_end"))
+        .group_by(Amount.user_id)
+        .subquery()
+    )
+
+    # Join members with their latest end_date
+    expired = (
+        db.query(Member)
+        .join(latest_amounts, Member.id == latest_amounts.c.user_id)
+        .filter(latest_amounts.c.latest_end < today)
+        .all()
+    )
+
+    return expired
+
     
      
      

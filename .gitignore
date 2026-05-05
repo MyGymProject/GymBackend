@@ -1,3 +1,4 @@
 .env
 GYM/
 __pycache__/
+K8s/deployment.yaml
